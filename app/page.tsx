@@ -1,4 +1,80 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type ChampionCard = {
+  slug: string;
+  name: string;
+  role: "Mid" | "ADC" | "Jungle";
+  tagline: string;
+  splash: string;
+  popularLine: string;
+};
+
+const CHAMPIONS: ChampionCard[] = [
+  {
+    slug: "zed",
+    name: "Zed",
+    role: "Mid",
+    tagline: "Burst • pickoff • snowball",
+    splash: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg",
+    popularLine: "Mid • Eletrocutar • Core: Youmuu + Serylda",
+  },
+  {
+    slug: "jinx",
+    name: "Jinx",
+    role: "ADC",
+    tagline: "late game • DPS • reset",
+    splash: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg",
+    popularLine: "ADC • Ritmo Fatal • Core: IE + Runaan",
+  },
+  {
+    slug: "lee-sin",
+    name: "Lee Sin",
+    role: "Jungle",
+    tagline: "early • gank • playmaking",
+    splash: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/LeeSin_0.jpg",
+    popularLine: "Jungle • Conquistador • Core: Cutelo + DD",
+  },
+];
+
+function normalize(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
 export default function Home() {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = normalize(query.trim());
+    if (!q) return CHAMPIONS;
+
+    return CHAMPIONS.filter((c) => {
+      const hay = normalize(`${c.name} ${c.slug} ${c.role} ${c.tagline}`);
+      return hay.includes(q);
+    });
+  }, [query]);
+
+  const featured = CHAMPIONS.find((c) => c.slug === "zed")!;
+  const popular = CHAMPIONS.filter((c) => c.slug === "jinx" || c.slug === "lee-sin");
+
+  function goIfExactMatch() {
+    const q = normalize(query.trim());
+    if (!q) return;
+
+    // tenta match exato por slug ou nome
+    const exact =
+      CHAMPIONS.find((c) => normalize(c.slug) === q) ||
+      CHAMPIONS.find((c) => normalize(c.name) === q);
+
+    if (exact) router.push(`/champion/${exact.slug}`);
+  }
+
   return (
     <main className="min-h-screen bg-[#070b18] text-white">
       {/* Topbar */}
@@ -21,13 +97,30 @@ export default function Home() {
             <a className="hover:text-white" href="#">Community</a>
           </nav>
 
+          {/* BUSCA FUNCIONANDO */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
               <span className="text-white/40 text-sm">⌕</span>
               <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") goIfExactMatch();
+                  if (e.key === "Escape") setQuery("");
+                }}
                 className="w-56 bg-transparent outline-none text-sm placeholder:text-white/40"
                 placeholder="Buscar campeão… (ex: zed)"
               />
+              {query.trim() ? (
+                <button
+                  onClick={() => setQuery("")}
+                  className="text-white/50 hover:text-white/80 text-sm"
+                  aria-label="Limpar busca"
+                  title="Limpar"
+                >
+                  ✕
+                </button>
+              ) : null}
             </div>
 
             <a
@@ -54,7 +147,7 @@ export default function Home() {
                 Guias de LoL com visual profissional — rápidos pra consultar e fáceis de manter.
               </h1>
               <p className="mt-3 text-white/70 max-w-2xl">
-                Builds, runas e dicas por campeão. Clique nos cards para ver a página completa.
+                Digite na busca para filtrar campeões (ex: “ji”, “lee”, “zed”). Pressione Enter para abrir o guia quando bater exato.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -78,8 +171,7 @@ export default function Home() {
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur shadow-lg shadow-black/30">
                 <div className="text-sm font-semibold">Dica rápida</div>
                 <p className="mt-2 text-sm text-white/70">
-                  Próximo upgrade: busca funcionando + filtro por rota (Mid/JG/ADC…) + páginas com seções
-                  (combos, matchups, build situacional).
+                  Próximo upgrade: filtro por rota (Mid/JG/ADC) + páginas com seções (combos, matchups, build situacional).
                 </p>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                   <div className="rounded-xl border border-white/10 bg-black/20 p-3">
@@ -125,29 +217,29 @@ export default function Home() {
 
             <div className="mt-4 grid gap-4">
               <a
-                href="/champion/zed"
+                href={`/champion/${featured.slug}`}
                 className="card-glow group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
               >
                 <div className="absolute inset-0 opacity-40">
                   <img
                     className="h-full w-full object-cover scale-105 group-hover:scale-110 transition"
-                    src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg"
-                    alt="Zed"
+                    src={featured.splash}
+                    alt={featured.name}
                   />
                 </div>
 
                 <div className="relative p-5">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-white/70">
-                    Featured • Mid
+                    Featured • {featured.role}
                   </div>
-                  <div className="mt-3 text-xl font-semibold">Zed — Guia completo</div>
+                  <div className="mt-3 text-xl font-semibold">{featured.name} — Guia completo</div>
                   <p className="mt-1 text-sm text-white/70 max-w-md">
                     Burst, runas e itens core. Ideal para quem quer pickoffs e snowball.
                   </p>
                   <div className="mt-4 flex gap-2 text-xs text-white/70 flex-wrap">
-                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Eletrocutar</span>
-                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Youmuu</span>
-                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Serylda</span>
+                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Build</span>
+                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Runas</span>
+                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Dicas</span>
                   </div>
                 </div>
               </a>
@@ -164,46 +256,25 @@ export default function Home() {
             </div>
 
             <div className="mt-4 space-y-3">
-              <a
-                href="/champion/jinx"
-                className="card-glow flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10 backdrop-blur shadow-lg shadow-black/30"
-              >
-                <img
-                  className="h-14 w-14 rounded-xl object-cover"
-                  src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg"
-                  alt="Jinx"
-                />
-                <div className="min-w-0">
-                  <div className="font-semibold">Jinx</div>
-                  <div className="text-xs text-white/60 truncate">
-                    ADC • Ritmo Fatal • Core: IE + Runaan
+              {popular.map((c) => (
+                <a
+                  key={c.slug}
+                  href={`/champion/${c.slug}`}
+                  className="card-glow flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10 backdrop-blur shadow-lg shadow-black/30"
+                >
+                  <img className="h-14 w-14 rounded-xl object-cover" src={c.splash} alt={c.name} />
+                  <div className="min-w-0">
+                    <div className="font-semibold">{c.name}</div>
+                    <div className="text-xs text-white/60 truncate">{c.popularLine}</div>
                   </div>
-                </div>
-                <span className="ml-auto text-xs text-white/50">→</span>
-              </a>
-
-              <a
-                href="/champion/lee-sin"
-                className="card-glow flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10 backdrop-blur shadow-lg shadow-black/30"
-              >
-                <img
-                  className="h-14 w-14 rounded-xl object-cover"
-                  src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/LeeSin_0.jpg"
-                  alt="Lee Sin"
-                />
-                <div className="min-w-0">
-                  <div className="font-semibold">Lee Sin</div>
-                  <div className="text-xs text-white/60 truncate">
-                    Jungle • Conquistador • Core: Cutelo + DD
-                  </div>
-                </div>
-                <span className="ml-auto text-xs text-white/50">→</span>
-              </a>
+                  <span className="ml-auto text-xs text-white/50">→</span>
+                </a>
+              ))}
 
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur">
                 <div className="text-sm font-semibold">Quer mais campeões?</div>
                 <p className="mt-1 text-sm text-white/70">
-                  Próximo passo: lista automática + busca. Aí você adiciona campeões num lugar só.
+                  Próximo passo: lista automática + filtro por rota.
                 </p>
               </div>
             </div>
@@ -215,66 +286,46 @@ export default function Home() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">Campeões</h2>
-              <p className="text-sm text-white/60">Clique para abrir o guia.</p>
+              <p className="text-sm text-white/60">
+                {query.trim()
+                  ? `Filtrando por: "${query.trim()}" • ${filtered.length} resultado(s)`
+                  : "Clique para abrir o guia."}
+              </p>
             </div>
-            <div className="text-xs text-white/40">v0.2</div>
+            <div className="text-xs text-white/40">v0.3</div>
           </div>
 
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <a
-              href="/champion/zed"
-              className="card-glow group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
-            >
-              <img
-                className="h-40 w-full object-cover group-hover:scale-[1.03] transition"
-                src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg"
-                alt="Zed"
-              />
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">Zed</div>
-                  <span className="text-xs rounded-full bg-white/10 px-2 py-1">Mid</span>
-                </div>
-                <p className="mt-1 text-sm text-white/70">Burst • pickoff • snowball</p>
+          {filtered.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-white/70">
+              Nenhum campeão encontrado para <span className="text-white">"{query.trim()}"</span>.
+              <div className="mt-2 text-sm text-white/50">
+                Dica: tente "zed", "jinx" ou "lee".
               </div>
-            </a>
-
-            <a
-              href="/champion/jinx"
-              className="card-glow group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
-            >
-              <img
-                className="h-40 w-full object-cover group-hover:scale-[1.03] transition"
-                src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg"
-                alt="Jinx"
-              />
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">Jinx</div>
-                  <span className="text-xs rounded-full bg-white/10 px-2 py-1">ADC</span>
-                </div>
-                <p className="mt-1 text-sm text-white/70">late game • DPS • reset</p>
-              </div>
-            </a>
-
-            <a
-              href="/champion/lee-sin"
-              className="card-glow group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
-            >
-              <img
-                className="h-40 w-full object-cover group-hover:scale-[1.03] transition"
-                src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/LeeSin_0.jpg"
-                alt="Lee Sin"
-              />
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">Lee Sin</div>
-                  <span className="text-xs rounded-full bg-white/10 px-2 py-1">Jungle</span>
-                </div>
-                <p className="mt-1 text-sm text-white/70">early • gank • playmaking</p>
-              </div>
-            </a>
-          </div>
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((c) => (
+                <a
+                  key={c.slug}
+                  href={`/champion/${c.slug}`}
+                  className="card-glow group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
+                >
+                  <img
+                    className="h-40 w-full object-cover group-hover:scale-[1.03] transition"
+                    src={c.splash}
+                    alt={c.name}
+                  />
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold">{c.name}</div>
+                      <span className="text-xs rounded-full bg-white/10 px-2 py-1">{c.role}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-white/70">{c.tagline}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         <footer className="mt-12 border-t border-white/10 pt-6 text-sm text-white/50">
