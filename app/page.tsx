@@ -23,10 +23,15 @@ export default function Home() {
         </p>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+          {/* ZED */}
+          <a
+            href="/champion/zed"
+            className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:translate-y-[-2px] transition block"
+          >
             <img
               className="h-40 w-full object-cover"
               src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg"
+              alt="Zed"
             />
             <div className="p-4">
               <h2 className="font-semibold">Zed Mid</h2>
@@ -34,12 +39,17 @@ export default function Home() {
                 Guia assassino meta atual
               </p>
             </div>
-          </div>
+          </a>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+          {/* JINX */}
+          <a
+            href="/champion/jinx"
+            className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:translate-y-[-2px] transition block"
+          >
             <img
               className="h-40 w-full object-cover"
               src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg"
+              alt="Jinx"
             />
             <div className="p-4">
               <h2 className="font-semibold">Jinx ADC</h2>
@@ -47,12 +57,17 @@ export default function Home() {
                 Escalando para o late game
               </p>
             </div>
-          </div>
+          </a>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+          {/* LEE SIN */}
+          <a
+            href="/champion/lee-sin"
+            className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:translate-y-[-2px] transition block"
+          >
             <img
               className="h-40 w-full object-cover"
               src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/LeeSin_0.jpg"
+              alt="Lee Sin"
             />
             <div className="p-4">
               <h2 className="font-semibold">Lee Sin Jungle</h2>
@@ -60,7 +75,7 @@ export default function Home() {
                 Guia completo para snowball
               </p>
             </div>
-          </div>
+          </a>
         </div>
       </section>
     </main>
