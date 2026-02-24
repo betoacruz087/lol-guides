@@ -40,11 +40,46 @@ const CHAMPIONS: ChampionCard[] = [
   // depois você adiciona mais aqui
 ];
 
+// ========= Tier List (Patch 26.4) =========
+const TIER_264 = {
+  Top: [
+    { tier: "S", name: "Ornn", note: "Ótimo e consistente" },
+    { tier: "A", name: "Garen", note: "Simples e forte no soloQ" },
+    { tier: "A", name: "Darius", note: "Pressão e snowball" },
+  ],
+  Jungle: [
+    { tier: "S", name: "Kha'Zix", note: "Pickoff e snowball" },
+    { tier: "A", name: "Lee Sin", note: "Playmaking e early" },
+    { tier: "A", name: "Amumu", note: "Teamfight e engage" },
+  ],
+  Mid: [
+    { tier: "S", name: "Ahri", note: "Safe + playmaking" },
+    { tier: "A", name: "Zed", note: "Pickoffs e pressão lateral" },
+    { tier: "A", name: "Syndra", note: "Burst e controle" },
+  ],
+  ADC: [
+    { tier: "S", name: "Jinx", note: "Scaling forte" },
+    { tier: "A", name: "Caitlyn", note: "Lane forte e siege" },
+    { tier: "A", name: "Ezreal", note: "Safe e poke" },
+  ],
+  Support: [
+    { tier: "S", name: "Leona", note: "Engage confiável" },
+    { tier: "A", name: "Thresh", note: "Playmaking e peel" },
+    { tier: "A", name: "Nami", note: "Buff e lane forte" },
+  ],
+};
+
 function normalize(s: string) {
   return s
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "");
+}
+
+function toSlug(name: string) {
+  return normalize(name)
+    .replace(/'/g, "")
+    .replace(/\s+/g, "-");
 }
 
 export default function Home() {
@@ -65,7 +100,7 @@ export default function Home() {
     return CHAMPIONS.filter((c) => {
       const hay = normalize(`${c.name} ${c.slug} ${c.role} ${c.tagline}`);
       return hay.includes(q);
-    }).slice(0, 7); // limite do dropdown
+    }).slice(0, 7);
   }, [query]);
 
   // fecha dropdown clicando fora
@@ -138,7 +173,7 @@ export default function Home() {
           <nav className="hidden md:flex items-center gap-6 text-sm text-white/80">
             <a className="hover:text-white" href="#featured">Guides</a>
             <a className="hover:text-white" href="#champions">Champions</a>
-            <a className="hover:text-white" href="#popular">Tier Lists</a>
+            <a className="hover:text-white" href="#tierlist">Tier Lists</a>
             <a className="hover:text-white" href="#">Community</a>
           </nav>
 
@@ -195,11 +230,7 @@ export default function Home() {
                             idx === activeIndex ? "bg-white/10" : "hover:bg-white/5",
                           ].join(" ")}
                         >
-                          <img
-                            src={c.splash}
-                            alt={c.name}
-                            className="h-10 w-10 rounded-xl object-cover"
-                          />
+                          <img src={c.splash} alt={c.name} className="h-10 w-10 rounded-xl object-cover" />
                           <div className="min-w-0">
                             <div className="font-semibold leading-4">
                               {c.name} <span className="text-white/50 text-xs">• {c.role}</span>
@@ -219,16 +250,13 @@ export default function Home() {
                   )}
 
                   <div className="px-4 py-3 border-t border-white/10 text-xs text-white/50">
-                    Dica: digite o nome do campeão (ex: “nidalee”) e clique na sugestão.
+                    Dica: digite o nome do campeão e clique na sugestão.
                   </div>
                 </div>
               )}
             </div>
 
-            <a
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-              href="#"
-            >
+            <a className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10" href="#">
               Entrar
             </a>
           </div>
@@ -242,27 +270,21 @@ export default function Home() {
             <div className="lg:col-span-8">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Atualizado • Patch atual
+                Atualizado • Patch 26.4
               </div>
 
               <h1 className="mt-4 text-3xl sm:text-4xl font-semibold leading-tight">
                 Guias de LoL com visual profissional — rápidos pra consultar e fáceis de manter.
               </h1>
               <p className="mt-3 text-white/70 max-w-2xl">
-                Use a busca no topo: ela mostra sugestões flutuantes (estilo LoLalytics) e abre o guia.
+                Use a busca no topo: ela mostra sugestões flutuantes e abre o guia.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <a
-                  href="#featured"
-                  className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium hover:bg-sky-400"
-                >
+                <a href="#featured" className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium hover:bg-sky-400">
                   Ver Destaques
                 </a>
-                <a
-                  href="#popular"
-                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"
-                >
+                <a href="#popular" className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">
                   Guias populares
                 </a>
               </div>
@@ -289,9 +311,7 @@ export default function Home() {
                     <div className="mt-1 font-semibold">S+*</div>
                   </div>
                 </div>
-                <p className="mt-2 text-[11px] text-white/40">
-                  *Exemplo visual.
-                </p>
+                <p className="mt-2 text-[11px] text-white/40">*Exemplo visual.</p>
               </div>
             </div>
           </div>
@@ -305,7 +325,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Content (mantive o resto simples) */}
+      {/* Content */}
       <section className="mx-auto max-w-6xl px-4 pb-12">
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Featured */}
@@ -323,11 +343,7 @@ export default function Home() {
                 className="card-glow group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
               >
                 <div className="absolute inset-0 opacity-40">
-                  <img
-                    className="h-full w-full object-cover scale-105 group-hover:scale-110 transition"
-                    src={featured.splash}
-                    alt={featured.name}
-                  />
+                  <img className="h-full w-full object-cover scale-105 group-hover:scale-110 transition" src={featured.splash} alt={featured.name} />
                 </div>
 
                 <div className="relative p-5">
@@ -370,6 +386,72 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* ========= Tier List (Patch 26.4) ========= */}
+        <section id="tierlist" className="mt-10">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">Tier List</h2>
+              <p className="text-sm text-white/60">
+                Patch <span className="text-white">26.4</span> • Base inicial
+              </p>
+            </div>
+            <div className="text-xs text-white/40">v0.5</div>
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {(
+              [
+                ["Top", TIER_264.Top],
+                ["Jungle", TIER_264.Jungle],
+                ["Mid", TIER_264.Mid],
+                ["ADC", TIER_264.ADC],
+                ["Support", TIER_264.Support],
+              ] as const
+            ).map(([role, list]) => (
+              <div
+                key={role}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur shadow-lg shadow-black/30"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">{role}</div>
+                  <span className="text-xs rounded-full bg-white/10 px-2 py-1">
+                    Patch 26.4
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {list.map((c) => (
+                    <div
+                      key={c.name}
+                      className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2"
+                    >
+                      <span className="w-8 text-center text-xs font-bold rounded-lg bg-emerald-500/15 border border-emerald-400/20 text-emerald-200 py-1">
+                        {c.tier}
+                      </span>
+
+                      <div className="min-w-0">
+                        <div className="font-semibold leading-4">{c.name}</div>
+                        <div className="text-xs text-white/60 truncate">{c.note}</div>
+                      </div>
+
+                      <a
+                        href={`/champion/${toSlug(c.name)}`}
+                        className="ml-auto text-xs text-sky-300 hover:underline"
+                      >
+                        ver guia →
+                      </a>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 text-[11px] text-white/45">
+                  Tier list varia por fonte — aqui é uma base inicial.
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Grid */}
         <div id="champions" className="mt-10">
