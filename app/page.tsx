@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type ChampionCard = {
@@ -37,6 +37,7 @@ const CHAMPIONS: ChampionCard[] = [
     splash: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/LeeSin_0.jpg",
     popularLine: "Jungle • Conquistador • Core: Cutelo + DD",
   },
+  // depois você adiciona mais aqui
 ];
 
 function normalize(s: string) {
@@ -48,32 +49,76 @@ function normalize(s: string) {
 
 export default function Home() {
   const router = useRouter();
-  const [query, setQuery] = useState("");
 
-  const filtered = useMemo(() => {
+  // busca + dropdown
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const results = useMemo(() => {
     const q = normalize(query.trim());
-    if (!q) return CHAMPIONS;
+    if (!q) return [];
 
     return CHAMPIONS.filter((c) => {
       const hay = normalize(`${c.name} ${c.slug} ${c.role} ${c.tagline}`);
       return hay.includes(q);
-    });
+    }).slice(0, 7); // limite do dropdown
   }, [query]);
+
+  // fecha dropdown clicando fora
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  // ao digitar, abre o dropdown (se tiver texto)
+  useEffect(() => {
+    if (query.trim()) {
+      setOpen(true);
+      setActiveIndex(0);
+    } else {
+      setOpen(false);
+    }
+  }, [query]);
+
+  function goToChampion(slug: string) {
+    setOpen(false);
+    router.push(`/champion/${slug}`);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!open) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => Math.min(prev + 1, Math.max(results.length - 1, 0)));
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => Math.max(prev - 1, 0));
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const pick = results[activeIndex] || results[0];
+      if (pick) goToChampion(pick.slug);
+    }
+
+    if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
 
   const featured = CHAMPIONS.find((c) => c.slug === "zed")!;
   const popular = CHAMPIONS.filter((c) => c.slug === "jinx" || c.slug === "lee-sin");
-
-  function goIfExactMatch() {
-    const q = normalize(query.trim());
-    if (!q) return;
-
-    // tenta match exato por slug ou nome
-    const exact =
-      CHAMPIONS.find((c) => normalize(c.slug) === q) ||
-      CHAMPIONS.find((c) => normalize(c.name) === q);
-
-    if (exact) router.push(`/champion/${exact.slug}`);
-  }
 
   return (
     <main className="min-h-screen bg-[#070b18] text-white">
@@ -97,30 +142,87 @@ export default function Home() {
             <a className="hover:text-white" href="#">Community</a>
           </nav>
 
-          {/* BUSCA FUNCIONANDO */}
+          {/* BUSCA COM DROPDOWN (flutuante) */}
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-              <span className="text-white/40 text-sm">⌕</span>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") goIfExactMatch();
-                  if (e.key === "Escape") setQuery("");
-                }}
-                className="w-56 bg-transparent outline-none text-sm placeholder:text-white/40"
-                placeholder="Buscar campeão… (ex: zed)"
-              />
-              {query.trim() ? (
-                <button
-                  onClick={() => setQuery("")}
-                  className="text-white/50 hover:text-white/80 text-sm"
-                  aria-label="Limpar busca"
-                  title="Limpar"
-                >
-                  ✕
-                </button>
-              ) : null}
+            <div ref={wrapperRef} className="hidden sm:block relative">
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 w-[340px]">
+                <span className="text-white/40 text-sm">⌕</span>
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => query.trim() && setOpen(true)}
+                  onKeyDown={onKeyDown}
+                  className="w-full bg-transparent outline-none text-sm placeholder:text-white/40"
+                  placeholder="Buscar campeão… (ex: nidalee)"
+                />
+                {query.trim() ? (
+                  <button
+                    onClick={() => {
+                      setQuery("");
+                      setOpen(false);
+                      inputRef.current?.focus();
+                    }}
+                    className="text-white/50 hover:text-white/80 text-sm"
+                    aria-label="Limpar busca"
+                    title="Limpar"
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </div>
+
+              {/* Dropdown flutuante */}
+              {open && (
+                <div className="absolute right-0 mt-2 w-[420px] rounded-2xl border border-white/10 bg-[#0b1020]/95 backdrop-blur shadow-2xl shadow-black/50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/10 text-xs text-white/60">
+                    {results.length > 0 ? (
+                      <>Sugestões ({results.length}) • Enter abre • ↑ ↓ navega</>
+                    ) : (
+                      <>Nenhum resultado</>
+                    )}
+                  </div>
+
+                  {results.length > 0 ? (
+                    <div className="py-2">
+                      {results.map((c, idx) => (
+                        <button
+                          key={c.slug}
+                          onClick={() => goToChampion(c.slug)}
+                          onMouseEnter={() => setActiveIndex(idx)}
+                          className={[
+                            "w-full text-left px-4 py-3 flex items-center gap-3 transition",
+                            idx === activeIndex ? "bg-white/10" : "hover:bg-white/5",
+                          ].join(" ")}
+                        >
+                          <img
+                            src={c.splash}
+                            alt={c.name}
+                            className="h-10 w-10 rounded-xl object-cover"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-semibold leading-4">
+                              {c.name} <span className="text-white/50 text-xs">• {c.role}</span>
+                            </div>
+                            <div className="text-xs text-white/60 truncate">{c.tagline}</div>
+                          </div>
+                          <span className="ml-auto text-xs text-white/40">↵</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-4 text-sm text-white/70">
+                      Tente: <span className="text-white">zed</span>,{" "}
+                      <span className="text-white">jinx</span>,{" "}
+                      <span className="text-white">lee</span>
+                    </div>
+                  )}
+
+                  <div className="px-4 py-3 border-t border-white/10 text-xs text-white/50">
+                    Dica: digite o nome do campeão (ex: “nidalee”) e clique na sugestão.
+                  </div>
+                </div>
+              )}
             </div>
 
             <a
@@ -147,7 +249,7 @@ export default function Home() {
                 Guias de LoL com visual profissional — rápidos pra consultar e fáceis de manter.
               </h1>
               <p className="mt-3 text-white/70 max-w-2xl">
-                Digite na busca para filtrar campeões (ex: “ji”, “lee”, “zed”). Pressione Enter para abrir o guia quando bater exato.
+                Use a busca no topo: ela mostra sugestões flutuantes (estilo LoLalytics) e abre o guia.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -171,7 +273,7 @@ export default function Home() {
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur shadow-lg shadow-black/30">
                 <div className="text-sm font-semibold">Dica rápida</div>
                 <p className="mt-2 text-sm text-white/70">
-                  Próximo upgrade: filtro por rota (Mid/JG/ADC) + páginas com seções (combos, matchups, build situacional).
+                  Próximo upgrade: conectar um banco (Supabase) pra você cadastrar campeões sem mexer no código.
                 </p>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                   <div className="rounded-xl border border-white/10 bg-black/20 p-3">
@@ -188,7 +290,7 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="mt-2 text-[11px] text-white/40">
-                  *Exemplo visual — você pode criar uma tier list real depois.
+                  *Exemplo visual.
                 </p>
               </div>
             </div>
@@ -203,7 +305,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Content */}
+      {/* Content (mantive o resto simples) */}
       <section className="mx-auto max-w-6xl px-4 pb-12">
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Featured */}
@@ -236,17 +338,12 @@ export default function Home() {
                   <p className="mt-1 text-sm text-white/70 max-w-md">
                     Burst, runas e itens core. Ideal para quem quer pickoffs e snowball.
                   </p>
-                  <div className="mt-4 flex gap-2 text-xs text-white/70 flex-wrap">
-                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Build</span>
-                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Runas</span>
-                    <span className="rounded-full bg-black/30 border border-white/10 px-3 py-1">Dicas</span>
-                  </div>
                 </div>
               </a>
             </div>
           </div>
 
-          {/* Popular this week */}
+          {/* Popular */}
           <div id="popular" className="lg:col-span-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Populares da semana</h2>
@@ -270,13 +367,6 @@ export default function Home() {
                   <span className="ml-auto text-xs text-white/50">→</span>
                 </a>
               ))}
-
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur">
-                <div className="text-sm font-semibold">Quer mais campeões?</div>
-                <p className="mt-1 text-sm text-white/70">
-                  Próximo passo: lista automática + filtro por rota.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -286,46 +376,29 @@ export default function Home() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">Campeões</h2>
-              <p className="text-sm text-white/60">
-                {query.trim()
-                  ? `Filtrando por: "${query.trim()}" • ${filtered.length} resultado(s)`
-                  : "Clique para abrir o guia."}
-              </p>
+              <p className="text-sm text-white/60">Clique para abrir o guia.</p>
             </div>
-            <div className="text-xs text-white/40">v0.3</div>
+            <div className="text-xs text-white/40">v0.4</div>
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-white/70">
-              Nenhum campeão encontrado para <span className="text-white">"{query.trim()}"</span>.
-              <div className="mt-2 text-sm text-white/50">
-                Dica: tente "zed", "jinx" ou "lee".
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((c) => (
-                <a
-                  key={c.slug}
-                  href={`/champion/${c.slug}`}
-                  className="card-glow group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
-                >
-                  <img
-                    className="h-40 w-full object-cover group-hover:scale-[1.03] transition"
-                    src={c.splash}
-                    alt={c.name}
-                  />
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="font-semibold">{c.name}</div>
-                      <span className="text-xs rounded-full bg-white/10 px-2 py-1">{c.role}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-white/70">{c.tagline}</p>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {CHAMPIONS.map((c) => (
+              <a
+                key={c.slug}
+                href={`/champion/${c.slug}`}
+                className="card-glow group rounded-2xl border border-white/10 bg-white/5 overflow-hidden transition backdrop-blur shadow-lg shadow-black/30 hover:bg-white/10"
+              >
+                <img className="h-40 w-full object-cover group-hover:scale-[1.03] transition" src={c.splash} alt={c.name} />
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold">{c.name}</div>
+                    <span className="text-xs rounded-full bg-white/10 px-2 py-1">{c.role}</span>
                   </div>
-                </a>
-              ))}
-            </div>
-          )}
+                  <p className="mt-1 text-sm text-white/70">{c.tagline}</p>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
 
         <footer className="mt-12 border-t border-white/10 pt-6 text-sm text-white/50">
